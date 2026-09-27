@@ -1,0 +1,12 @@
+{
+  "name": "create-lead",
+  "version": "1.0.0",
+  "description": "Stores an early-access lead in Appwrite and sends Resend emails",
+  "main": "src/index.js",
+  "type": "module",
+  "license": "MIT",
+  "dependencies": {
+    "node-appwrite": "^13.0.0",
+    "resend": "^4.0.0"
+  }
+}
