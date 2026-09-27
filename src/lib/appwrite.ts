@@ -13,7 +13,7 @@ const ENDPOINT = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT ?? "";
 const PROJECT_ID = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID ?? "";
 
 export const APP = {
-  databaseId: process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID ?? "aggarwal",
+  databaseId: process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID ?? "",
   leadsCollectionId: process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION ?? "leads",
   adminsTeamId: process.env.NEXT_PUBLIC_APPWRITE_TEAM_ADMINS ?? "admins",
   createLeadFunctionId: process.env.NEXT_PUBLIC_APPWRITE_FN_CREATE_LEAD ?? "create-lead",
@@ -50,6 +50,7 @@ export type AppwriteKit = {
   client: import("appwrite").Client;
   account: import("appwrite").Account;
   databases: import("appwrite").Databases;
+  tablesDB: import("appwrite").TablesDB;
   teams: import("appwrite").Teams;
   functions: import("appwrite").Functions;
 };
@@ -65,7 +66,7 @@ export async function getAppwrite(): Promise<AppwriteKit> {
     );
   }
 
-  const { Client, Account, Databases, Teams, Functions } = await import("appwrite");
+  const { Client, Account, Databases, TablesDB, Teams, Functions } = await import("appwrite");
 
   const client = new Client().setEndpoint(ENDPOINT).setProject(PROJECT_ID);
 
@@ -85,6 +86,7 @@ export async function getAppwrite(): Promise<AppwriteKit> {
     client,
     account: new Account(client),
     databases: new Databases(client),
+    tablesDB: new TablesDB(client),
     teams: new Teams(client),
     functions: new Functions(client),
   };

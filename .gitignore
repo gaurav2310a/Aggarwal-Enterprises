@@ -47,3 +47,6 @@ next-env.d.ts
 
 # local serve log
 serve.log
+
+# local preview screenshots
+*.png

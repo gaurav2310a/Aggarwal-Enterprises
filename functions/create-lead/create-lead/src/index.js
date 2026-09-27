@@ -19,7 +19,7 @@
  *   BRAND_NAME                  Aggarwal House
  */
 
-import { Client, TablesDB, ID } from "node-appwrite";
+import { Client, Databases, ID } from "node-appwrite";
 import { Resend } from "resend";
 
 const BRAND = process.env.BRAND_NAME || "Aggarwal House";
@@ -39,27 +39,12 @@ const esc = (s = "") =>
   );
 
 export default async ({ req, res, log, error }) => {
-  // Diagnostics: which injected variables actually arrived?
-  log(
-    `env key=${Boolean(process.env.APPWRITE_FUNCTION_API_KEY)} ` +
-      `project=${process.env.APPWRITE_FUNCTION_PROJECT_ID || "missing"} ` +
-      `endpoint=${process.env.APPWRITE_FUNCTION_API_ENDPOINT || "missing"} ` +
-      `db=${process.env.APPWRITE_DATABASE_ID || "default"} ` +
-      `table=${process.env.APPWRITE_LEADS_COLLECTION || "default"}`
-  );
-
-  // The function runs as a guest: the `leads` table grants create("any") and
-  // keeps read/update/delete locked to the admins team. If a key is ever
-  // injected (dynamic API keys enabled), it is used and takes precedence.
   const client = new Client()
     .setEndpoint(process.env.APPWRITE_FUNCTION_API_ENDPOINT || "https://cloud.appwrite.io/v1")
-    .setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID);
+    .setProjectId(process.env.APPWRITE_FUNCTION_PROJECT_ID)
+    .setKey(process.env.APPWRITE_FUNCTION_API_KEY);
 
-  if (process.env.APPWRITE_FUNCTION_API_KEY) {
-    client.setKey(process.env.APPWRITE_FUNCTION_API_KEY);
-  }
-
-  const tables = new TablesDB(client);
+  const databases = new Databases(client);
   const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
   try {
@@ -97,14 +82,14 @@ export default async ({ req, res, log, error }) => {
     if (email) data.email = email;
     if (String(body.notes || "").trim()) data.notes = String(body.notes).slice(0, 1000);
 
-    const row = await tables.createRow(
+    const doc = await databases.createDocument(
       process.env.APPWRITE_DATABASE_ID || "aggarwal",
       process.env.APPWRITE_LEADS_COLLECTION || "leads",
       ID.unique(),
       data
     );
 
-    log(`Lead stored: row ${row.$id} (${interest})`);
+    log(`Lead stored: ${doc.$id} (${interest})`);
 
     // 2) emails -----------------------------------------------------------
     let emailed = false;
@@ -157,9 +142,9 @@ export default async ({ req, res, log, error }) => {
     return res.json({
       ok: true,
       service: "aggarwal-create-lead",
-      documentId: row.$id,
+      documentId: doc.$id,
       emailed,
-      database: process.env.APPWRITE_DATABASE_ID || "",
+      database: process.env.APPWRITE_DATABASE_ID || "aggarwal",
       collection: process.env.APPWRITE_LEADS_COLLECTION || "leads",
     });
   } catch (err) {
@@ -171,7 +156,7 @@ export default async ({ req, res, log, error }) => {
       {
         ok: false,
         error: message,
-        database: process.env.APPWRITE_DATABASE_ID || "",
+        database: process.env.APPWRITE_DATABASE_ID || "aggarwal",
         collection: process.env.APPWRITE_LEADS_COLLECTION || "leads",
         endpoint: process.env.APPWRITE_FUNCTION_API_ENDPOINT || "(not set)",
         resendConfigured: Boolean(process.env.RESEND_API_KEY),

@@ -7,7 +7,7 @@ import { submitLead, type LeadInterest } from "@/lib/leads";
 import { CheckIcon, WhatsAppIcon } from "./Icons";
 import { QrPanel } from "./QrPanel";
 
-type Status = { kind: "idle" | "ok" | "err"; message?: string };
+type Status = { kind: "idle" | "ok" | "err"; message?: string; detail?: string };
 type Errors = Partial<Record<"name" | "mobile" | "email", string>>;
 
 const POINTS = [
@@ -71,7 +71,7 @@ export function EarlyAccess() {
       });
 
       if (!result.ok) {
-        setStatus({ kind: "err", message: result.error });
+        setStatus({ kind: "err", message: result.error, detail: result.detail });
         return;
       }
 
@@ -219,12 +219,26 @@ export function EarlyAccess() {
             </button>
 
             {status.kind !== "idle" && status.message && (
-              <p
-                className={`form__status form__status--${status.kind === "ok" ? "ok" : "err"}`}
-                role="status"
-              >
-                {status.message}
-              </p>
+              <>
+                <p
+                  className={`form__status form__status--${status.kind === "ok" ? "ok" : "err"}`}
+                  role="status"
+                >
+                  {status.message}
+                </p>
+                {status.detail && (
+                  <p
+                    style={{
+                      fontSize: 11.5,
+                      color: "#8d8175",
+                      wordBreak: "break-word",
+                      marginTop: -6,
+                    }}
+                  >
+                    <code>{status.detail}</code>
+                  </p>
+                )}
+              </>
             )}
 
             <p style={{ fontSize: 12.5, color: "#8d8175" }}>

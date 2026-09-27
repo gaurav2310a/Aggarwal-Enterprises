@@ -29,7 +29,7 @@ export type NewLead = {
 export type SubmitResult =
   | { ok: true; storedIn: "appwrite"; documentId?: string; emailed: boolean }
   | { ok: true; storedIn: "local" }
-  | { ok: false; error: string };
+  | { ok: false; error: string; detail?: string };
 
 const LOCAL_KEY = "aggarwal_early_access_leads";
 
@@ -58,24 +58,47 @@ export async function submitLead(lead: NewLead): Promise<SubmitResult> {
       throw new Error(`Function status: ${execution.status} — ${execution.responseBody}`);
     }
 
-    let emailed = false;
-    let documentId: string | undefined;
+    // A function can complete and still report a failure in its JSON body.
+    let body: Record<string, unknown> = {};
     try {
-      const body = execution.responseBody ? JSON.parse(execution.responseBody) : {};
-      emailed = Boolean(body.emailed);
-      documentId = body.documentId;
+      body = execution.responseBody ? JSON.parse(execution.responseBody) : {};
     } catch {
       /* non-JSON response is fine */
     }
 
-    return { ok: true, storedIn: "appwrite", documentId, emailed };
+    if (body.ok === false || !body.documentId) {
+      const detail = [
+        String(body.error ?? "the deployed function did not return a documentId"),
+        body.database ? `db=${body.database}` : "",
+        body.collection ? `collection=${body.collection}` : "",
+        body.endpoint ? `endpoint=${body.endpoint}` : "",
+        body.resendConfigured === false ? "RESEND_API_KEY missing" : "",
+      ]
+        .filter(Boolean)
+        .join(" · ");
+      return {
+        ok: false,
+        error:
+          "We could not save your details just now. Please try again, or message us on WhatsApp and we will add you manually.",
+        detail,
+      };
+    }
+
+    return {
+      ok: true,
+      storedIn: "appwrite",
+      documentId: (body.documentId as string) ?? undefined,
+      emailed: Boolean(body.emailed),
+    };
   } catch (error) {
     console.error("[Aggarwal] lead submission failed, falling back to local queue:", error);
     queueLocal(lead);
+    const aw = error as { code?: number; message?: string; type?: string };
     return {
       ok: false,
       error:
         "We could not reach the sign-up service. Please try again, or message us on WhatsApp and we will add you manually.",
+      detail: `Appwrite error ${aw.code ?? "?"}: ${aw.message ?? String(error)}`,
     };
   }
 }

@@ -53,14 +53,14 @@ export function LeadsDashboard({ user, demo = false }: { user: AdminUser; demo?:
     setLoading(true);
     setError("");
     try {
-      const { databases } = await getAppwrite();
+      const { tablesDB } = await getAppwrite();
       const { Query } = await import("appwrite");
-      const res = await databases.listDocuments({
+      const res = await tablesDB.listRows({
         databaseId: APP.databaseId,
-        collectionId: APP.leadsCollectionId,
+        tableId: APP.leadsCollectionId,
         queries: [Query.orderDesc("$createdAt"), Query.limit(200)],
       });
-      setLeads(res.documents as unknown as Lead[]);
+      setLeads((res.rows ?? []) as unknown as Lead[]);
       setRefreshedAt(new Date().toISOString());
     } catch (err) {
       setError(
@@ -130,11 +130,11 @@ export function LeadsDashboard({ user, demo = false }: { user: AdminUser; demo?:
   async function remove(id: string) {
     if (!confirm("Delete this lead permanently?")) return;
     try {
-      const { databases } = await getAppwrite();
-      await databases.deleteDocument({
+      const { tablesDB } = await getAppwrite();
+      await tablesDB.deleteRow({
         databaseId: APP.databaseId,
-        collectionId: APP.leadsCollectionId,
-        documentId: id,
+        tableId: APP.leadsCollectionId,
+        rowId: id,
       });
       setLeads((prev) => prev.filter((l) => l.$id !== id));
     } catch (err) {
@@ -168,6 +168,16 @@ export function LeadsDashboard({ user, demo = false }: { user: AdminUser; demo?:
           <strong>Preview mode</strong> — these are sample rows so you can check the layout.
           Real leads appear once Appwrite is connected. Delete this banner by opening{" "}
           <code>/admin</code> without <code>?demo=1</code>.
+        </p>
+      )}
+
+      {user.teamMismatch && (
+        <p className="adm__note adm__note--err" style={{ marginTop: 18 }} role="status">
+          You are signed in through the team <strong>{user.teamName}</strong> (
+          <code>{user.teamId}</code>), but <code>NEXT_PUBLIC_APPWRITE_TEAM_ADMINS</code> points at a
+          different ID. Set it to <code>{user.teamId}</code>, rebuild, and give the{" "}
+          <code>leads</code> collection the same <strong>Team: {user.teamName}</strong> read
+          permission.
         </p>
       )}
 

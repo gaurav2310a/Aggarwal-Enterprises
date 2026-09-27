@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { getSession, type AuthState } from "@/lib/adminAuth";
+import { getSession, signOut, type AuthState } from "@/lib/adminAuth";
 import { AdminLogin } from "@/components/admin/AdminLogin";
 import { LeadsDashboard } from "@/components/admin/LeadsDashboard";
 
@@ -56,6 +56,25 @@ NEXT_PUBLIC_APPWRITE_DATABASE_ID=aggarwal`}
       )}
 
       {!demo && state?.status === "signed_out" && <AdminLogin onSuccess={() => void refresh()} />}
+
+      {!demo && state?.status === "not_admin" && (
+        <div className="adm__login">
+          <h1>Signed in, but not an admin</h1>
+          <p>
+            <strong>{state.user.email}</strong> is signed in, but the admin team check did not pass.
+          </p>
+          <p className="adm__note adm__note--err" style={{ marginTop: 14, textAlign: "left" }}>
+            {state.reason}
+          </p>
+          <button
+            className="btn btn--ink btn--block"
+            style={{ marginTop: 18 }}
+            onClick={() => void signOut().then(() => void refresh())}
+          >
+            Sign out
+          </button>
+        </div>
+      )}
 
       {!demo && state?.status === "signed_in" && <LeadsDashboard user={state.user} />}
     </div>
