@@ -1,6 +1,6 @@
 # AGGARWAL — Coming Soon
 
-Premium, trust-first "Coming Soon" site for **Aggarwal House — Fashion • Home • Kitchen**, built with
+Premium, trust-first "Coming Soon" site for **Aggarwal's House — Fashion • Home • Kitchen**, built with
 Next.js (App Router) and exported as a **fully static site**. The two counters are
 **Aggarwal Fashion** (*Modern Style for You*) and **Aggarwal Homeware** (*Better Home Happier Lives*).
 
@@ -187,14 +187,14 @@ powershell -ExecutionPolicy Bypass -File appwrite/setup.ps1 `
   -ProjectId aggarwalhouse `
   -OwnerEmail you@gmail.com -OwnerPassword "use-a-strong-one" `
   -ResendKey re_xxxxxxxxxxxx `
-  -MailFrom "Aggarwal House <hello@yourdomain.com>"
+  -MailFrom "Aggarwal's House <hello@yourdomain.com>"
 ```
 
 The script (`appwrite/setup.ps1`) creates, in order:
 
 | Step | What |
 | --- | --- |
-| project + platform client | `Aggarwal House`, Web SDK client |
+| project + platform client | `Aggarwal's House`, Web SDK client |
 | database + `leads` collection | read/update/delete **only for team `admins`** |
 | 9 attributes | `name`, `mobile`, `email`, `interest`, `whatsappOptIn`, `source`, `page`, `status`, `notes` |
 | index | on `$createdAt` for fast admin sorting |
@@ -272,6 +272,40 @@ be set, so a properly configured production site is cookie-only.
 1. Appwrite console → **Auth → Users → Invite** (or create email+password)
 2. **Teams → admins → Add** that user
 3. They can now sign in at `/admin`
+
+### Function settings that are easy to break
+
+Two settings on each function must stay correct, and the CLI **replaces** them
+whenever you run `appwrite functions update` without passing them:
+
+| Setting | create-lead | send-broadcast | Symptom if wrong |
+| --- | --- | --- | --- |
+| **Execute** | `any` | `team:admins` | `No permissions provided for action 'execute'` |
+| **Scopes** | `rows.read`, `rows.write` | `rows.read`, `rows.write`, `users.read`, `users.write` | `missing scopes (["rows.read", …])` |
+
+Console: **Functions → function → Settings → Execute / Scopes**.
+CLI (always pass both flags when you update anything else):
+
+```powershell
+appwrite functions update --function-id create-lead --name create-lead `
+  --entrypoint "src/index.js" --commands "npm install" `
+  --execute "any" --scopes "rows.read" --scopes "rows.write" --force
+
+appwrite functions update --function-id send-broadcast --name send-broadcast `
+  --entrypoint "src/index.js" --commands "npm install" `
+  --execute "team:admins" `
+  --scopes "rows.read" --scopes "rows.write" --scopes "users.read" --scopes "users.write" --force
+```
+
+**Entrypoint must be `src/index.js`** (not Appwrite's default `src/main.js`), or
+you get `Failed to load entrypoint, file src/main.js does not exist.`
+
+Quick health check from the terminal:
+
+```powershell
+appwrite functions get --function-id send-broadcast --json |
+  Select-Object entrypoint, execute, scopes
+```
 
 ### Security notes
 

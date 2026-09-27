@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./admin.css";
 
 export const metadata: Metadata = {
-  title: "Admin · Aggarwal House",
+  title: "Admin · Aggarwal's House",
   robots: { index: false, follow: false, nocache: true },
 };
 

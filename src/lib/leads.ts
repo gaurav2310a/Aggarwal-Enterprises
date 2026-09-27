@@ -13,6 +13,14 @@ export type Lead = {
   page?: string;
   status?: string;
   notes?: string;
+  /** Campaign attribution from the QR code / printed link. */
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  utmTerm?: string;
+  utmContent?: string;
+  referrer?: string;
+  device?: string;
   $createdAt: string;
   $updatedAt: string;
 };
@@ -24,6 +32,18 @@ export type NewLead = {
   interest: LeadInterest;
   whatsappOptIn: boolean;
   page?: string;
+  /** Anything the customer asked to see first — stored as the lead's note. */
+  notes?: string;
+  /** Campaign data from the QR code / printed link that brought them here. */
+  campaign?: Partial<{
+    utmSource: string;
+    utmMedium: string;
+    utmCampaign: string;
+    utmTerm: string;
+    utmContent: string;
+    referrer: string;
+    device: string;
+  }>;
 };
 
 export type SubmitResult =
@@ -50,7 +70,16 @@ export async function submitLead(lead: NewLead): Promise<SubmitResult> {
     const { functions } = await getAppwrite();
     const execution = await functions.createExecution({
       functionId: APP.createLeadFunctionId,
-      body: JSON.stringify(lead),
+      body: JSON.stringify({
+        ...lead,
+        utmSource: lead.campaign?.utmSource,
+        utmMedium: lead.campaign?.utmMedium,
+        utmCampaign: lead.campaign?.utmCampaign,
+        utmTerm: lead.campaign?.utmTerm,
+        utmContent: lead.campaign?.utmContent,
+        referrer: lead.campaign?.referrer,
+        device: lead.campaign?.device,
+      }),
       async: false, // sync: we want the result (the function also sends the emails)
     });
 

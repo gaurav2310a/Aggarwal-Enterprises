@@ -4,26 +4,27 @@ import { useState, type FormEvent } from "react";
 import { trackEvent } from "@/lib/analytics";
 import { BRAND, waLink } from "@/lib/site";
 import { submitLead, type LeadInterest } from "@/lib/leads";
+import { getCampaign } from "@/lib/campaign";
 import { CheckIcon, WhatsAppIcon } from "./Icons";
-import { QrPanel } from "./QrPanel";
 
 type Status = { kind: "idle" | "ok" | "err"; message?: string; detail?: string };
 type Errors = Partial<Record<"name" | "mobile" | "email", string>>;
 
 const POINTS = [
   "Be the first to know when the store goes live",
-  "Get the online launch offer sent to you first",
-  "Receive new arrival and festive offer updates",
+  "A launch voucher reserved in your name",
+  "New arrival and festive offer updates",
   "Choose how you hear from us — email, or WhatsApp",
 ];
 
-function validate(name: string, mobile: string, email: string): Errors {
+function validate(name: string, email: string, mobile: string): Errors {
   const errors: Errors = {};
   if (name.trim().length < 2) errors.name = "Please enter your name";
-  if (mobile.replace(/\D/g, "").length < 10)
-    errors.mobile = "Enter a valid 10-digit mobile number";
-  if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim()))
+  if (!email.trim()) errors.email = "Please enter your email";
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim()))
     errors.email = "Enter a valid email address";
+  if (mobile.trim() && mobile.replace(/\D/g, "").length < 10)
+    errors.mobile = "Enter a valid 10-digit mobile number";
   return errors;
 }
 
@@ -31,6 +32,7 @@ export function EarlyAccess() {
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
   const [email, setEmail] = useState("");
+  const [notes, setNotes] = useState("");
   const [interest, setInterest] = useState("both");
   const [whatsappOptIn, setWhatsappOptIn] = useState(true);
   const [errors, setErrors] = useState<Errors>({});
@@ -39,7 +41,7 @@ export function EarlyAccess() {
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const found = validate(name, mobile, email);
+    const found = validate(name, email, mobile);
     setErrors(found);
     if (Object.keys(found).length) {
       setStatus({ kind: "err", message: "Please correct the highlighted fields." });
@@ -53,6 +55,7 @@ export function EarlyAccess() {
       name: name.trim(),
       mobile: mobile.replace(/\D/g, ""),
       email: email.trim(),
+      notes: notes.trim(),
       interest,
       whatsappOptIn,
       source: "coming_soon_site",
@@ -61,6 +64,7 @@ export function EarlyAccess() {
     };
 
     try {
+      const campaign = getCampaign();
       const result = await submitLead({
         name: lead.name,
         mobile: lead.mobile,
@@ -68,6 +72,8 @@ export function EarlyAccess() {
         interest: lead.interest as LeadInterest,
         whatsappOptIn: lead.whatsappOptIn,
         page: lead.page,
+        notes: lead.notes,
+        campaign,
       });
 
       if (!result.ok) {
@@ -78,8 +84,12 @@ export function EarlyAccess() {
       trackEvent("early_access_signup", {
         store: interest,
         has_email: Boolean(lead.email),
-        whatsapp_opt_in: whatsappOptIn,
+        whatsapp_opt_in: lead.whatsappOptIn,
         stored_in: result.storedIn,
+        utm_source: campaign.utmSource ?? "(direct)",
+        utm_medium: campaign.utmMedium ?? "(none)",
+        utm_campaign: campaign.utmCampaign ?? "(none)",
+        device: campaign.device,
       });
 
       setStatus({
@@ -92,6 +102,7 @@ export function EarlyAccess() {
       setName("");
       setMobile("");
       setEmail("");
+      setNotes("");
     } finally {
       setBusy(false);
     }
@@ -119,12 +130,31 @@ export function EarlyAccess() {
             ))}
           </ul>
 
-          <QrPanel
-            variant="dark"
-            size={112}
-            title="Scan to get early access"
-            note="Print this block on your counter or flex board — it links straight to this form."
-          />
+          <div className="early__reasons">
+            <p className="early__reasons-title">Why people are joining</p>
+            <div className="early__reasons-grid">
+              <div>
+                <span className="early__reason-icon">%</span>
+                <strong>Launch voucher</strong>
+                <em>A welcome code reserved in your name</em>
+              </div>
+              <div>
+                <span className="early__reason-icon">★</span>
+                <strong>First look</strong>
+                <em>See new arrivals before they go public</em>
+              </div>
+              <div>
+                <span className="early__reason-icon">⚡</span>
+                <strong>Early offers</strong>
+                <em>Launch-day discounts, shared first</em>
+              </div>
+              <div>
+                <span className="early__reason-icon">☎</span>
+                <strong>Order from home</strong>
+                <em>Or collect from the shop in Pradhan Chowk</em>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="early__card">
@@ -144,41 +174,56 @@ export function EarlyAccess() {
               {errors.name && <span className="field__error">{errors.name}</span>}
             </div>
 
-            <div className="form__row">
-              <div className="field">
-                <label htmlFor="lead-mobile">Mobile number</label>
-                <input
-                  id="lead-mobile"
-                  name="mobile"
-                  className="input"
-                  type="tel"
-                  inputMode="numeric"
-                  placeholder="10-digit mobile"
-                  autoComplete="tel"
-                  value={mobile}
-                  onChange={(e) => setMobile(e.target.value)}
-                  aria-invalid={Boolean(errors.mobile)}
-                />
-                {errors.mobile && <span className="field__error">{errors.mobile}</span>}
-              </div>
+            <div className="field">
+              <label htmlFor="lead-email">Email</label>
+              <input
+                id="lead-email"
+                name="email"
+                className="input"
+                type="email"
+                inputMode="email"
+                placeholder="you@example.com"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                aria-invalid={Boolean(errors.email)}
+              />
+              {errors.email && <span className="field__error">{errors.email}</span>}
+            </div>
 
-              <div className="field">
-                <label htmlFor="lead-email">
-                  Email <span>(optional)</span>
-                </label>
-                <input
-                  id="lead-email"
-                  name="email"
-                  className="input"
-                  type="email"
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  aria-invalid={Boolean(errors.email)}
-                />
-                {errors.email && <span className="field__error">{errors.email}</span>}
-              </div>
+            <div className="field">
+              <label htmlFor="lead-mobile">
+                Mobile number <span>(optional)</span>
+              </label>
+              <input
+                id="lead-mobile"
+                name="mobile"
+                className="input"
+                type="tel"
+                inputMode="numeric"
+                placeholder="10-digit mobile"
+                autoComplete="tel"
+                value={mobile}
+                onChange={(e) => setMobile(e.target.value)}
+                aria-invalid={Boolean(errors.mobile)}
+              />
+              {errors.mobile && <span className="field__error">{errors.mobile}</span>}
+            </div>
+
+            <div className="field">
+              <label htmlFor="lead-notes">
+                Anything you want to see first? <span>(optional)</span>
+              </label>
+              <textarea
+                id="lead-notes"
+                name="notes"
+                className="input"
+                rows={3}
+                style={{ resize: "vertical" }}
+                placeholder="e.g. Please add sarees in size 38, or a 5-piece pressure cooker set"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
             </div>
 
             <div className="field">

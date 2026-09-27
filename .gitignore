@@ -50,3 +50,6 @@ serve.log
 
 # local preview screenshots
 *.png
+
+# rendered email previews
+email-previews/

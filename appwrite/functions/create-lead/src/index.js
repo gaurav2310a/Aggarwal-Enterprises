@@ -1,5 +1,5 @@
 /**
- * Aggarwal House — create-lead
+ * Aggarwal's House — create-lead
  * ------------------------------
  * Called by the public "Join the Launch" form (executes as guest).
  *
@@ -14,15 +14,16 @@
  *   APPWRITE_DATABASE_ID        aggarwal
  *   APPWRITE_LEADS_COLLECTION   leads
  *   RESEND_API_KEY              re_xxxxxxxx
- *   MAIL_FROM                   "Aggarwal House <hello@yourdomain.com>"
+ *   MAIL_FROM                   "Aggarwal's House <hello@yourdomain.com>"
  *   OWNER_EMAIL                 you@gmail.com
- *   BRAND_NAME                  Aggarwal House
+ *   BRAND_NAME                  Aggarwal's House
  */
 
 import { Client, TablesDB, ID } from "node-appwrite";
 import { Resend } from "resend";
+import { confirmationEmail, ownerLeadEmail } from "./templates.js";
 
-const BRAND = process.env.BRAND_NAME || "Aggarwal House";
+const BRAND = process.env.BRAND_NAME || "Aggarwal's House";
 
 function readBody(req) {
   if (!req.bodyText) return {};
@@ -37,6 +38,44 @@ const esc = (s = "") =>
   String(s).replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
   );
+
+/**
+ * Where owner notifications are sent. Falls back through NOTIFY_EMAIL,
+ * OWNER_EMAIL, REPLY_TO and MAIL_FROM, parsing "Name <addr>" strings.
+ */
+function notifyAddress() {
+  const pick = (v) => {
+    const s = String(v || "").trim();
+    if (!s) return "";
+    const m = s.match(/<([^>]+)>/);
+    return m ? m[1] : s;
+  };
+  return (
+    pick(process.env.NOTIFY_EMAIL) ||
+    pick(process.env.OWNER_EMAIL) ||
+    pick(process.env.REPLY_TO) ||
+    pick(process.env.MAIL_FROM)
+  );
+}
+
+/**
+ * One-click unsubscribe headers.
+ *
+ * Gmail routes a message to the Promotions tab when it looks like a marketing
+ * broadcast. A valid List-Unsubscribe (plus List-Unsubscribe-Post) marks the mail
+ * as transactional, which is what keeps it in the Primary inbox.
+ */
+function unsubscribeHeaders(site) {
+  const owner = notifyAddress() || "unsubscribe@localhost";
+  const link = `${site}/#privacy`;
+  return {
+    "List-Unsubscribe": `<${link}>, <mailto:${owner}?subject=unsubscribe>`,
+    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    "List-Id": `Aggarwal's House launch list <list.${
+      process.env.MAIL_FROM_DOMAIN || "store.stacknova.in"
+    }>`,
+  };
+}
 
 export default async ({ req, res, log, error }) => {
   // Diagnostics: which injected variables actually arrived?
@@ -72,30 +111,55 @@ export default async ({ req, res, log, error }) => {
       : "both";
     const whatsappOptIn = Boolean(body.whatsappOptIn);
 
+    // Email is the primary contact now; mobile is optional.
     if (name.length < 2) {
       return res.json({ ok: false, error: "name is required" }, 400);
     }
-    if (mobile.length < 10) {
-      return res.json({ ok: false, error: "a valid mobile number is required" }, 400);
+    if (!email) {
+      return res.json({ ok: false, error: "email is required" }, 400);
     }
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
-      return res.json({ ok: false, error: "invalid email address" }, 400);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+      return res.json({ ok: false, error: "please enter a valid email address" }, 400);
+    }
+    if (mobile && mobile.length < 10) {
+      return res.json({ ok: false, error: "that mobile number looks incomplete" }, 400);
     }
 
     // 1) store ------------------------------------------------------------
     // Only include optional fields when they have a value: an Appwrite "email"
     // attribute rejects an empty string and would fail the whole insert.
+    // Campaign data comes from the QR code / links on the shop boards.
+    const str = (v, max) => String(v ?? "").trim().slice(0, max);
+    const utmSource = str(body.utmSource, 60);
+    const utmMedium = str(body.utmMedium, 60);
+    const utmCampaign = str(body.utmCampaign, 80);
+    const utmTerm = str(body.utmTerm, 80);
+    const utmContent = str(body.utmContent, 80);
+    const referrer = str(body.referrer, 200);
+    const device = str(body.device, 20);
+
     const data = {
       name,
       mobile,
       interest,
       whatsappOptIn,
-      source: String(body.source || "coming_soon_site").slice(0, 60),
-      page: String(body.page || "/").slice(0, 120),
+      // `source` stays the quick-grouping field: the QR channel when known.
+      source: utmSource || str(body.source, 60) || "coming_soon_site",
+      page: str(body.page, 120) || "/",
       status: "new",
     };
     if (email) data.email = email;
-    if (String(body.notes || "").trim()) data.notes = String(body.notes).slice(0, 1000);
+    // `mobile` is a required column, so always send a value (empty when skipped).
+    data.mobile = mobile;
+    const leadNote = String(body.notes || "").trim().slice(0, 1000);
+    if (leadNote) data.notes = leadNote;
+    if (utmSource) data.utmSource = utmSource;
+    if (utmMedium) data.utmMedium = utmMedium;
+    if (utmCampaign) data.utmCampaign = utmCampaign;
+    if (utmTerm) data.utmTerm = utmTerm;
+    if (utmContent) data.utmContent = utmContent;
+    if (referrer) data.referrer = referrer;
+    if (device) data.device = device;
 
     const row = await tables.createRow(
       process.env.APPWRITE_DATABASE_ID || "aggarwal",
@@ -104,7 +168,11 @@ export default async ({ req, res, log, error }) => {
       data
     );
 
-    log(`Lead stored: row ${row.$id} (${interest})`);
+    log(
+      `Lead stored: row ${row.$id} (${interest}) source=${data.source} medium=${utmMedium || "-"} campaign=${
+        utmCampaign || "-"
+      } device=${device || "-"}`
+    );
 
     // 2) emails -----------------------------------------------------------
     let emailed = false;
@@ -116,40 +184,63 @@ export default async ({ req, res, log, error }) => {
             ? "Aggarwal Homeware — Better Home Happier Lives"
             : "Aggarwal Fashion and Aggarwal Homeware";
 
+      const site = (process.env.SITE_URL || "https://store.stacknova.in").replace(/\/$/, "");
+      const wa = process.env.WHATSAPP_NUMBER
+        ? `https://wa.me/${process.env.WHATSAPP_NUMBER}`
+        : "";
+      const shop = notifyAddress();
+
       if (email) {
         const { error: mailError } = await resend.emails.send({
           from: process.env.MAIL_FROM || BRAND,
           to: [email],
+          replyTo: process.env.REPLY_TO || shop,
           subject: `You are on the ${BRAND} launch list`,
-          html: `<div style="font-family:Georgia,serif;max-width:560px;margin:auto;color:#191512">
-  <p style="letter-spacing:.22em;text-transform:uppercase;font-size:12px;color:#b8531f">${esc(BRAND)}</p>
-  <h1 style="font-size:26px">Thank you, ${esc(name)}.</h1>
-  <p>You are on the launch list. We will write to you the moment our online store opens.</p>
-  <p>You are interested in: <strong>${esc(storeLine)}</strong></p>
-  <p>Until then, the shop is open as usual in Pradhan Chowk, Vikas Nagar, New Delhi.</p>
-  <p style="font-size:13px;color:#746c62">You received this because you signed up on our website.
-  We will only contact you about the launch.</p>
-</div>`,
+          html: confirmationEmail({
+            name,
+            interestLine: storeLine,
+            whatsappUrl: wa,
+          }),
+          text: `Thank you ${String(name).split(" ")[0]}. You are on the ${BRAND} launch list. We will write to you the moment our online store opens. You are interested in: ${storeLine}.`,
+          // Transactional signals — these are what keep Gmail putting the
+          // message in the Primary tab instead of Promotions.
+          headers: {
+            ...unsubscribeHeaders(site),
+            "X-Entity-Ref-ID": `lead/${row.$id}`,
+            "Auto-Submitted": "auto-generated",
+            "Precedence": "bulk",
+          },
         });
         if (mailError) error(`Customer email failed: ${mailError.message}`);
         else emailed = true;
       }
 
-      const { error: ownerError } = await resend.emails.send({
-        from: process.env.MAIL_FROM || BRAND,
-        to: [process.env.OWNER_EMAIL],
-        subject: `New launch-list lead: ${name}`,
-        html: `<div style="font-family:Georgia,serif;max-width:560px;margin:auto;color:#191512">
-  <h2 style="font-size:20px">New lead from the website</h2>
-  <p><strong>Name:</strong> ${esc(name)}<br/>
-     <strong>Mobile:</strong> ${esc(mobile)}<br/>
-     <strong>Email:</strong> ${esc(email || "—")}<br/>
-     <strong>Store:</strong> ${esc(interest)}<br/>
-     <strong>WhatsApp opt-in:</strong> ${whatsappOptIn ? "yes" : "no"}</p>
-  <p>Open the panel: <code>/admin</code></p>
-</div>`,
-      });
-      if (ownerError) error(`Owner email failed: ${ownerError.message}`);
+      if (!shop) {
+        error(
+          "No owner address configured — set NOTIFY_EMAIL or OWNER_EMAIL as a function variable."
+        );
+      } else {
+        const { error: ownerError } = await resend.emails.send({
+          from: process.env.MAIL_FROM || BRAND,
+          to: shop,
+          replyTo: process.env.REPLY_TO || shop,
+          subject: `New launch-list lead: ${name}`,
+          html: ownerLeadEmail({
+            name,
+            mobile,
+            email,
+            interest,
+            whatsappOptIn,
+            source: data.source,
+            medium: utmMedium,
+            campaign: utmCampaign,
+            device,
+            adminUrl: `${site}/admin`,
+          }),
+          text: `New lead: ${name} (${mobile}) — ${interest}. Source: ${data.source} ${utmCampaign || ""}`,
+        });
+        if (ownerError) error(`Owner email failed: ${ownerError.message}`);
+      }
     } else {
       log("RESEND_API_KEY not set — lead stored without emails.");
     }

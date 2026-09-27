@@ -1,5 +1,5 @@
 <#
-  Aggarwal House — Appwrite bootstrap
+  Aggarwal's House — Appwrite bootstrap
   ------------------------------------
   Creates everything the site needs with the Appwrite CLI:
     project -> web client -> database -> leads collection (+ attributes + index)
@@ -16,7 +16,7 @@
 #>
 
 param(
-  [string]$ProjectName    = "Aggarwal House",
+  [string]$ProjectName    = "Aggarwal's House",
   [string]$ProjectId      = "aggarwalhouse",
   [string]$DatabaseId     = "aggarwal",
   [string]$CollectionId   = "leads",
@@ -24,8 +24,8 @@ param(
   [string]$OwnerEmail     = "you@gmail.com",
   [string]$OwnerPassword  = "",
   [string]$ResendKey      = "",
-  [string]$MailFrom       = "Aggarwal House <hello@yourdomain.com>",
-  [string]$BrandName      = "Aggarwal House"
+  [string]$MailFrom       = "Aggarwal's House <hello@yourdomain.com>",
+  [string]$BrandName      = "Aggarwal's House"
 )
 
 $ErrorActionPreference = "Stop"

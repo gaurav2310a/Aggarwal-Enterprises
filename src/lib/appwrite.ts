@@ -115,3 +115,51 @@ export function clearClientSession(client: import("appwrite").Client) {
     /* ignore */
   }
 }
+
+/**
+ * Calls an admin-only Appwrite Function with the signed-in admin's session,
+ * turning the two common failures into plain-language messages:
+ *   - session lost / not attached  → "sign in again"
+ *   - function execute permission  → "add team:admins in the console"
+ */
+export async function callAdminFunction(
+  functionId: string,
+  payload: Record<string, unknown>
+) {
+  const { functions, account } = await getAppwrite();
+
+  // Fail fast with a clear message if the session is not actually attached.
+  try {
+    await account.get();
+  } catch {
+    throw new Error("Your admin session has expired. Sign out and sign in again.");
+  }
+
+  try {
+    const execution = await functions.createExecution({
+      functionId,
+      body: JSON.stringify(payload),
+      async: false,
+    });
+
+    if (execution.status !== "completed") {
+      throw new Error(
+        `The "${functionId}" function did not complete (${execution.status}). Check its Logs in the Appwrite console.`
+      );
+    }
+
+    try {
+      return execution.responseBody ? JSON.parse(execution.responseBody) : {};
+    } catch {
+      return {};
+    }
+  } catch (err) {
+    const aw = err as { code?: number; message?: string };
+    if (aw.code === 401) {
+      throw new Error(
+        `Appwrite refused to run "${functionId}". In the console open Functions → ${functionId} → Settings → Execute and set it to Team: ${APP.adminsTeamId} (or "Any" if you prefer).`
+      );
+    }
+    throw err;
+  }
+}

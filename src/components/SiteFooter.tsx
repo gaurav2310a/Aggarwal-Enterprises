@@ -1,6 +1,5 @@
 import { BRAND, CONTACT, SOCIALS, waLink } from "@/lib/site";
 import { FacebookIcon, InstagramIcon, MailIcon, PhoneIcon, PinIcon, WhatsAppIcon } from "./Icons";
-import { QrPanel } from "./QrPanel";
 import { StoreMap } from "./StoreMap";
 
 const SOCIAL_ICON = {
@@ -146,15 +145,6 @@ export function SiteFooter() {
               View map below
             </a>
           </div>
-        </div>
-
-        <div style={{ maxWidth: 460, marginTop: 40 }}>
-          <QrPanel
-            variant="light"
-            size={104}
-            title="Scan to get early access"
-            note="Same code as on our shop boards. Scan with any phone camera."
-          />
         </div>
 
         <StoreMap />

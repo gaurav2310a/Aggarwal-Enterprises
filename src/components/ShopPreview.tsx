@@ -48,6 +48,9 @@ export function ShopPreview() {
 
   return (
     <section className="section section--tint" id="shop-preview">
+      {/* Real anchors for the hero store cards: #shop-preview-fashion / -homeware */}
+      <span id="shop-preview-fashion" className="anchor-target" aria-hidden />
+      <span id="shop-preview-homeware" className="anchor-target" aria-hidden />
       <div className="shell">
         <div className="section-head">
           <span className="eyebrow">Shop preview</span>

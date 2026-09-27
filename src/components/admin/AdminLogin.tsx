@@ -26,7 +26,7 @@ export function AdminLogin({ onSuccess }: { onSuccess: () => void }) {
   return (
     <div className="adm__login">
       <h1>Admin sign in</h1>
-      <p>Aggarwal House back office. Only accounts in the admins team can sign in.</p>
+      <p>Aggarwal's House back office. Only accounts in the admins team can sign in.</p>
 
       <form className="form" onSubmit={onSubmit} style={{ marginTop: 22 }} noValidate>
         <div className="field">

@@ -1,6 +1,5 @@
 import { ArrowIcon } from "./Icons";
 import { HeroArt } from "./SceneArt";
-import { QrPanel } from "./QrPanel";
 import { BRAND, STORES } from "@/lib/site";
 
 export function Hero() {
@@ -61,16 +60,6 @@ export function Hero() {
             </div>
           </div>
         </div>
-
-      {/* QR block — placed high on the page for shop flex boards */}
-      <div className="shell" style={{ marginTop: 40 }}>
-        <QrPanel
-          variant="light"
-          size={118}
-          title="Scan to get early access"
-          note="Seen it on our shop board? Scan here to open the site and join the launch list."
-        />
-      </div>
     </section>
   );
 }

@@ -17,12 +17,12 @@ export function StoreMap() {
         <span className="eyebrow">Visit the store</span>
         <h3>Come see us in person</h3>
         <p>
-          The online store is still being built, but the shop is open as usual. Come in, browse and
-          tell us what you would like to see online first.
+          Open as usual while we build the online store. Come in, browse, and tell us what you would
+          like to see online first — Aggarwal Fashion for clothing and readymades, Aggarwal Homeware
+          for kitchen and home essentials.
         </p>
-
         <p className="footer-map__address">
-          <PinIcon size={18} />
+          <PinIcon size={17} />
           <span>
             {CONTACT.addressLines.map((line) => (
               <span key={line} style={{ display: "block" }}>
@@ -31,7 +31,6 @@ export function StoreMap() {
             ))}
           </span>
         </p>
-
         <div className="footer-map__actions">
           <a
             className="btn btn--ink"
@@ -61,11 +60,8 @@ export function StoreMap() {
       <div className="footer-map__frame">
         {!ready && (
           <span className="footer-map__placeholder">
-            <PinIcon size={22} />
+            <PinIcon size={20} />
             <strong>Loading map…</strong>
-            <a href={CONTACT.mapUrl} target="_blank" rel="noopener noreferrer">
-              Open in Google Maps
-            </a>
           </span>
         )}
         <iframe

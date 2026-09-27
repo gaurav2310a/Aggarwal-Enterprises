@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { trackCta, trackEvent } from "@/lib/analytics";
+import { captureCampaign, trackCampaignView } from "@/lib/campaign";
 
 /**
  * One delegated listener for the whole page: any element carrying
@@ -11,6 +12,10 @@ import { trackCta, trackEvent } from "@/lib/analytics";
 export function Analytics() {
   useEffect(() => {
     trackEvent("page_view", { page_path: window.location.pathname });
+
+    // Remember the QR / campaign parameters for this visitor session.
+    const campaign = captureCampaign();
+    trackCampaignView(campaign);
 
     const onClick = (event: MouseEvent) => {
       const el = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-cta]");

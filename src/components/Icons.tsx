@@ -158,3 +158,32 @@ export const TruckIcon = ({ size = 18, className, strokeWidth = 1.7 }: IconProps
     <circle cx="16.6" cy="18" r="1.7" />
   </svg>
 );
+
+export const TrashIcon = ({ size = 18, className, strokeWidth = 1.7 }: IconProps) => (
+  <svg {...base(size, strokeWidth, className)}>
+    <path d="M4 6.5h16" />
+    <path d="M9.5 6.5V4.8c0-.7.6-1.3 1.3-1.3h2.4c.7 0 1.3.6 1.3 1.3v1.7" />
+    <path d="M6.2 6.5 7 19.2c0 .7.6 1.3 1.3 1.3h7.4c.7 0 1.3-.6 1.3-1.3l.8-12.7" />
+    <path d="M10.5 10v6.8M13.5 10v6.8" />
+  </svg>
+);
+
+export const UserPlusIcon = ({ size = 18, className, strokeWidth = 1.7 }: IconProps) => (
+  <svg {...base(size, strokeWidth, className)}>
+    <circle cx="9.5" cy="8" r="3.6" />
+    <path d="M3.5 20c.6-3.4 3-5.2 6-5.2 1.2 0 2.3.3 3.2.8" />
+    <path d="M18 13.5v6M15 16.5h6" />
+  </svg>
+);
+
+export const ChevronLeftIcon = ({ size = 18, className, strokeWidth = 1.8 }: IconProps) => (
+  <svg {...base(size, strokeWidth, className)}>
+    <path d="M14.5 5 8 12l6.5 7" />
+  </svg>
+);
+
+export const ChevronRightIcon = ({ size = 18, className, strokeWidth = 1.8 }: IconProps) => (
+  <svg {...base(size, strokeWidth, className)}>
+    <path d="M9.5 5 16 12l-6.5 7" />
+  </svg>
+);
