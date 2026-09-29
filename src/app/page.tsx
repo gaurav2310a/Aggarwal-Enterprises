@@ -18,8 +18,8 @@ export default function Home() {
         <Hero />
         <TrustStrip />
         <StoreCards />
-        <ComingSoon />
         <EarlyAccess />
+        <ComingSoon />
         <WhyShop />
         <ShopPreview />
         <StoreStory />

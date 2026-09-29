@@ -153,6 +153,16 @@ export function EarlyAccess() {
                 <strong>Order from home</strong>
                 <em>Or collect from the shop in Pradhan Chowk</em>
               </div>
+              <div>
+                <span className="early__reason-icon">📦</span>
+                <strong>Fast delivery</strong>
+                <em>Get your items delivered to your doorstep</em>
+              </div>
+              <div>
+                <span className="early__reason-icon">🎫</span>
+                <strong>Exclusive Lucky Draws</strong>
+                <em>Get a chance to win exclusive prizes and deals (special offer for early access members)</em>
+              </div>
             </div>
           </div>
         </div>

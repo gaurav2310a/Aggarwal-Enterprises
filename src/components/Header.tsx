@@ -8,8 +8,8 @@ import { waLink } from "@/lib/site";
 const LINKS = [
   { href: "#fashion", label: "Fashion" },
   { href: "#homeware", label: "Homeware" },
-  { href: "#coming-soon", label: "Coming Soon" },
   { href: "#early-access", label: "Early Access" },
+  { href: "#coming-soon", label: "Coming Soon" },
   { href: "#visit-store", label: "Visit Store" },
 ];
 

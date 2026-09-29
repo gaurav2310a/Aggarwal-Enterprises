@@ -1095,6 +1095,75 @@ textarea {
   max-width: 100%;
 }
 
+/* --- Early access: responsive ------------------------------------------- */
+
+@media (max-width: 980px) {
+  .early__grid {
+    grid-template-columns: 1fr;
+    gap: clamp(32px, 6vw, 48px);
+  }
+
+  .early__copy p {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .early__card {
+    padding: 20px 16px;
+    border-radius: var(--radius);
+  }
+
+  .form,
+  .form__row {
+    gap: 14px;
+  }
+
+  .field label {
+    font-size: 11px;
+  }
+
+  .input,
+  .early select.input,
+  .early .field select {
+    padding-block: 13px;
+    font-size: 16px;
+  }
+
+  .check {
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13.5px;
+    line-height: 1.45;
+  }
+
+  .check input {
+    flex: none;
+    margin-top: 1px;
+  }
+
+  .wa-note {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .wa-note span {
+    flex: 1 1 100%;
+  }
+
+  .wa-note .btn {
+    flex: 1 1 100%;
+    text-align: center;
+  }
+}
+
+@media (max-width: 360px) {
+  .early__card {
+    padding-inline: 12px;
+  }
+}
+
 /* ==========================================================================
    8. Why shop with us
    ========================================================================== */
